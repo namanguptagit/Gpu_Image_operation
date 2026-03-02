@@ -1,4 +1,5 @@
 mod cpu;
+mod gpu;
 
 // Main benchmarking entry point.
 pub fn main() {
@@ -16,4 +17,7 @@ pub fn main() {
     let iters = 100;
 
     let cpu_result = cpu::run_cpu_benchmark(width, height, &image_data, warmup, iters);
+    let gpu_result = gpu::run_gpu_benchmark(width, height, &image_data, warmup, iters);
+
+    
 }
