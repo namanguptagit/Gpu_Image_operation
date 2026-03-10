@@ -24,13 +24,25 @@ It fulfills the objective of creating a simple, done-properly GPU operation in R
 
 ## Benchmark Results
 
-Testing on a $1920\times 1080$ RGB image (Fake Data):
+Testing on a real RGB image (`input.png`):
 
 | Implementation       | Avg Duration per Run (100 iters) | Note |
 |----------------------|----------------------------------|------|
-| **CPU (kornia-rs)**  | ~237.7 µs                        | Rayon multi-threaded CPU iteration |
-| **GPU (CubeCL)**     | ~370.2 µs                        | WGPU backend via CubeCL (includes dispatch/sync overhead) |
+| **CPU (kornia-rs)**  | ~2.21 ms                         | Rayon multi-threaded CPU iteration |
+| **GPU (CubeCL)**     | ~2.41 ms                         | WGPU backend via CubeCL (includes dispatch/sync overhead) |
 
 *The zero difference output during execution validates mathematical accuracy.*
-    
+
+### Output Validation
+
+The pipeline outputs the mathematically verified results back to `cpu_output.png` and `gpu_output.png`.
+
+**Original Image (`input.png`):**
+
+![Input Image](input.png)
+
+**Grayscale Output (`gpu_output.png`):**
+
+![GPU Output](gpu_output.png)
+
 *Note: Due to overheads of the graphics-API compute pipeline, simplistic pixel-wise loops could run very fast on CPU, while hitting fixed GPU-host dispatch time costs.*
