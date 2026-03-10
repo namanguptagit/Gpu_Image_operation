@@ -18,9 +18,16 @@ It fulfills the objective of creating a simple, done-properly GPU operation in R
    ```bash
    git clone https://github.com/kornia/kornia-rs.git reference_kornia_rs
    ```
-3. Run the benchmark in release mode:
+3. Run the benchmark in release mode, passing an image file as an argument (e.g., `input.png`):
+
+   **To run using the default cross-platform `wgpu` backend for CubeCL:**
    ```bash
-   cargo run --release
+   cargo run --release input.png
+   ```
+
+   **To run forcing CubeCL to also use its native `cuda` backend:**
+   ```bash
+   cargo run --release --features cuda input.png
    ```
 
 ## Benchmark Results
