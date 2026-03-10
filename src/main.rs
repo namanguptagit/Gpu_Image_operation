@@ -1,5 +1,6 @@
 mod cpu;
-mod gpu;
+mod cubecl_gpu;
+mod native_cuda;
 
 use image::{ImageBuffer, Luma};
 
@@ -19,7 +20,8 @@ pub fn main() {
     let iters = 100;
 
     let cpu_result = cpu::run_cpu_benchmark(width as usize, height as usize, &image_data, warmup, iters);
-    let gpu_result = gpu::run_gpu_benchmark(width as usize, height as usize, &image_data, warmup, iters);
+    let cubecl_result = cubecl_gpu::run_cubecl_benchmark(width as usize, height as usize, &image_data, warmup, iters);
+    let native_result = native_cuda::run_gpu_benchmark(width as usize, height as usize, &image_data, warmup, iters);
 
     // Save CPU result
     let cpu_raw: Vec<u8> = cpu_result.iter().map(|&p| (p.clamp(0.0, 1.0) * 255.0) as u8).collect();
@@ -27,27 +29,38 @@ pub fn main() {
     cpu_img.save("cpu_output.png").expect("Failed to save CPU image");
     println!("Saved CPU output to cpu_output.png");
 
-    // Save GPU result
-    let gpu_raw: Vec<u8> = gpu_result.iter().map(|&p| (p.clamp(0.0, 1.0) * 255.0) as u8).collect();
-    let gpu_img = ImageBuffer::<Luma<u8>, Vec<u8>>::from_raw(width, height, gpu_raw).expect("Failed to create GPU image buffer");
-    gpu_img.save("gpu_output.png").expect("Failed to save GPU image");
-    println!("Saved GPU output to gpu_output.png");
+    // Save CubeCL GPU result
+    let cubecl_raw: Vec<u8> = cubecl_result.iter().map(|&p| (p.clamp(0.0, 1.0) * 255.0) as u8).collect();
+    let cubecl_img = ImageBuffer::<Luma<u8>, Vec<u8>>::from_raw(width, height, cubecl_raw).expect("Failed to create GPU image buffer");
+    cubecl_img.save("cubecl_output.png").expect("Failed to save CubeCL image");
+    println!("Saved CubeCL output to cubecl_output.png");
+
+    // Save Native CUDA result
+    let native_raw: Vec<u8> = native_result.iter().map(|&p| (p.clamp(0.0, 1.0) * 255.0) as u8).collect();
+    let native_img = ImageBuffer::<Luma<u8>, Vec<u8>>::from_raw(width, height, native_raw).expect("Failed to create GPU image buffer");
+    native_img.save("native_cuda_output.png").expect("Failed to save Native CUDA image");
+    println!("Saved Native CUDA output to native_cuda_output.png");
 
     // Accuracy Validation
-    let mut diff_sum = 0.0;
-    let mut max_diff = 0.0f32;
-    
-    for (g_cpu, g_gpu) in cpu_result.iter().zip(gpu_result.iter()) {
-        let diff = (g_cpu - g_gpu).abs();
-        diff_sum += diff;
-        if diff > max_diff {
-            max_diff = diff;
+    let validate = |name: &str, gpu_res: &[f32]| {
+        let mut diff_sum = 0.0;
+        let mut max_diff = 0.0f32;
+        
+        for (g_cpu, g_gpu) in cpu_result.iter().zip(gpu_res.iter()) {
+            let diff = (g_cpu - g_gpu).abs();
+            diff_sum += diff;
+            if diff > max_diff {
+                max_diff = diff;
+            }
         }
-    }
-    
-    println!(
-        "Validation: average diff: {:.6}, max diff: {:.6}", 
-        diff_sum / num_pixels as f32, 
-        max_diff
-    );
+        
+        println!(
+            "{name} Validation: average diff: {:.6}, max diff: {:.6}", 
+            diff_sum / num_pixels as f32, 
+            max_diff
+        );
+    };
+
+    validate("CubeCL", &cubecl_result);
+    validate("Native CUDA", &native_result);
 }
