@@ -1,8 +1,11 @@
-use kornia_image::{allocator::CpuAllocator, Image, ImageSize};
+// CPU benchmarking module.
+// Utilizes kornia-rs with Rayon to perform multithreaded RGB to Grayscale
+// conversions for baseline performance comparison.
+
+use kornia_image::{Image, ImageSize, allocator::CpuAllocator};
 use kornia_imgproc::color::gray_from_rgb;
 use std::time::Instant;
 
-// Runs the CPU benchmark using kornia-rs Rayon iteration.
 pub fn run_cpu_benchmark(
     width: usize,
     height: usize,
@@ -16,27 +19,27 @@ pub fn run_cpu_benchmark(
         ImageSize { width, height },
         image_data.to_vec(),
         CpuAllocator,
-    ).unwrap();
-    
+    )
+    .unwrap();
+
     let mut kornia_gray = Image::<f32, 1, CpuAllocator>::from_size_val(
         ImageSize { width, height },
         0.0,
         CpuAllocator,
-    ).unwrap();
+    )
+    .unwrap();
 
-    // Warmup
     for _ in 0..warmup {
         gray_from_rgb(&kornia_img, &mut kornia_gray).unwrap();
     }
-    
-    // Benchmark
+
     let start = Instant::now();
     for _ in 0..iters {
         gray_from_rgb(&kornia_img, &mut kornia_gray).unwrap();
     }
-    
+
     let cpu_duration = start.elapsed() / iters;
     println!("CPU (kornia-rs) duration: {:?}", cpu_duration);
-    
+
     kornia_gray.as_slice().to_vec()
 }

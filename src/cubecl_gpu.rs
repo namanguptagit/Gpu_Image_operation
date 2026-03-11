@@ -1,7 +1,10 @@
+// GPU benchmarking module.
+// Implements a CubeCL kernel to perform RGB to Grayscale conversions
+// and provides the benchmarking execution harness using WebGPU.
+
 use cubecl::prelude::*;
 use std::time::Instant;
 
-// CubeCL GPU kernel for RGB to Grayscale conversion
 #[cube(launch_unchecked)]
 pub fn gray_from_rgb_kernel<F: Float>(
     input: &Array<F>,
@@ -69,25 +72,23 @@ pub fn run_cubecl_benchmark(
         };
     };
 
-    // Warmup
     for _ in 0..warmup {
         run_gpu();
     }
 
     let _ = client.read_one(out_handle.clone());
 
-    // Benchmark
     let start = Instant::now();
     for _ in 0..iters {
         run_gpu();
     }
-    
+
     let actual_bytes = client.read_one(out_handle.clone());
     let gpu_duration = start.elapsed() / iters;
     println!("GPU (CubeCL) duration: {:?}", gpu_duration);
 
     let actual: &[f32] = bytemuck::cast_slice(&actual_bytes);
     println!("Validation: Output size {}", actual.len());
-    
+
     actual.to_vec()
 }

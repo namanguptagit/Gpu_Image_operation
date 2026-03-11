@@ -1,20 +1,29 @@
+// Main application module.
+// This module parses arguments, loads real image data, executes both
+// CPU and GPU benchmarks for comparison, and saves the output validations.
+
 mod cpu;
 mod cubecl_gpu;
 mod native_cuda;
 
 use image::{ImageBuffer, Luma};
 
-// Main benchmarking entry point.
 pub fn main() {
-    let img_path = std::env::args().nth(1).unwrap_or_else(|| "input.png".to_string());
+    let img_path = std::env::args()
+        .nth(1)
+        .unwrap_or_else(|| "input.png".to_string());
     println!("Loading image from: {}", img_path);
-    
+
     let img = image::open(&img_path).expect("Failed to open image");
     let rgb_img = img.to_rgb8();
     let (width, height) = rgb_img.dimensions();
     let num_pixels = (width * height) as usize;
 
-    let image_data: Vec<f32> = rgb_img.into_raw().into_iter().map(|v| v as f32 / 255.0).collect();
+    let image_data: Vec<f32> = rgb_img
+        .into_raw()
+        .into_iter()
+        .map(|v| v as f32 / 255.0)
+        .collect();
 
     let warmup = 10;
     let iters = 100;
@@ -23,10 +32,15 @@ pub fn main() {
     let cubecl_result = cubecl_gpu::run_cubecl_benchmark(width as usize, height as usize, &image_data, warmup, iters);
     let native_result = native_cuda::run_gpu_benchmark(width as usize, height as usize, &image_data, warmup, iters);
 
-    // Save CPU result
-    let cpu_raw: Vec<u8> = cpu_result.iter().map(|&p| (p.clamp(0.0, 1.0) * 255.0) as u8).collect();
-    let cpu_img = ImageBuffer::<Luma<u8>, Vec<u8>>::from_raw(width, height, cpu_raw).expect("Failed to create CPU image buffer");
-    cpu_img.save("cpu_output.png").expect("Failed to save CPU image");
+    let cpu_raw: Vec<u8> = cpu_result
+        .iter()
+        .map(|&p| (p.clamp(0.0, 1.0) * 255.0) as u8)
+        .collect();
+    let cpu_img = ImageBuffer::<Luma<u8>, Vec<u8>>::from_raw(width, height, cpu_raw)
+        .expect("Failed to create CPU image buffer");
+    cpu_img
+        .save("cpu_output.png")
+        .expect("Failed to save CPU image");
     println!("Saved CPU output to cpu_output.png");
 
     // Save CubeCL GPU result
