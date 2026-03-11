@@ -4,6 +4,7 @@
 
 mod cpu;
 mod cubecl_gpu;
+#[cfg(feature = "cuda")]
 mod native_cuda;
 
 use image::{ImageBuffer, Luma};
@@ -30,6 +31,8 @@ pub fn main() {
 
     let cpu_result = cpu::run_cpu_benchmark(width as usize, height as usize, &image_data, warmup, iters);
     let cubecl_result = cubecl_gpu::run_cubecl_benchmark(width as usize, height as usize, &image_data, warmup, iters);
+    
+    #[cfg(feature = "cuda")]
     let native_result = native_cuda::run_gpu_benchmark(width as usize, height as usize, &image_data, warmup, iters);
 
     let cpu_raw: Vec<u8> = cpu_result
@@ -50,10 +53,13 @@ pub fn main() {
     println!("Saved CubeCL output to cubecl_output.png");
 
     // Save Native CUDA result
-    let native_raw: Vec<u8> = native_result.iter().map(|&p| (p.clamp(0.0, 1.0) * 255.0) as u8).collect();
-    let native_img = ImageBuffer::<Luma<u8>, Vec<u8>>::from_raw(width, height, native_raw).expect("Failed to create GPU image buffer");
-    native_img.save("native_cuda_output.png").expect("Failed to save Native CUDA image");
-    println!("Saved Native CUDA output to native_cuda_output.png");
+    #[cfg(feature = "cuda")]
+    {
+        let native_raw: Vec<u8> = native_result.iter().map(|&p| (p.clamp(0.0, 1.0) * 255.0) as u8).collect();
+        let native_img = ImageBuffer::<Luma<u8>, Vec<u8>>::from_raw(width, height, native_raw).expect("Failed to create GPU image buffer");
+        native_img.save("native_cuda_output.png").expect("Failed to save Native CUDA image");
+        println!("Saved Native CUDA output to native_cuda_output.png");
+    }
 
     // Accuracy Validation
     let validate = |name: &str, gpu_res: &[f32]| {
@@ -76,5 +82,7 @@ pub fn main() {
     };
 
     validate("CubeCL", &cubecl_result);
+    
+    #[cfg(feature = "cuda")]
     validate("Native CUDA", &native_result);
 }
